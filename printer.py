@@ -10,7 +10,7 @@ def init_printer(maj: int, min: int):
 
 def print_pass(name_image: Union[str, Image.Image], pronouns_image: Union[str, Image.Image], reference: str, ticket_type: str, slug: str):
     p.linedisplay_clear()
-    p.image("birminghack-logo-raster-bw-rs.png",center=True)
+    p.image("assets/birminghack-logo-raster-bw-rs.png",center=True)
     p.ln()
     p.ln()
     p.image(name_image,center=True)
@@ -40,7 +40,7 @@ def print_food(issued_to: str, pizza_type: str, group: str, d_req: Optional[str]
     p.ln()
     p.set(align="left",bold=False,normal_textsize=True)
     p.textln("Exchange me for pizza!")
-    p.image("pizza.png",center=True)
+    p.image("assets/pizza.png",center=True)
     p.ln()
     p.set(align="left",bold=True,normal_textsize=True)
     p.software_columns(["Group", group], widths=48, align=["left", "right"])
