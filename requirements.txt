@@ -1,0 +1,7 @@
+opencv-python
+requests
+python-dotenv
+pyzbar
+strictyaml
+pillow
+-e git+https://github.com/python-escpos/python-escpos.git@7ec59c41a277b594242ee4564df069e8e4356d8e#egg=python_escpos
