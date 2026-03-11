@@ -18,6 +18,11 @@ load_dotenv()
 REG_SLUG: str = os.getenv("TITO_REGISTRATION_LIST_SLUG", "")
 EE_SLUG: str = os.getenv("TITO_CHECKIN_LIST_SLUG", "")
 
+# Core API Auth
+TITO_ACCOUNT_SLUG = os.getenv("TITO_ACCOUNT_SLUG", "")
+TITO_EVENT_SLUG = os.getenv("TITO_EVENT_SLUG", "")
+TITO_SECRET = os.getenv("TITO_SECRET", "")
+
 if not REG_SLUG or not EE_SLUG:
     print("Error: Missing TITO_REGISTRATION_LIST_SLUG or TITO_CHECKIN_LIST_SLUG in .env")
     sys.exit(1)
@@ -27,7 +32,7 @@ EE_BASE_URL: str = f"https://checkin.tito.io/checkin_lists/{EE_SLUG}"
 HEADERS: dict[str, str] = {
     "Accept": "application/json",
     "Content-Type": "application/json",
-    "User-Agent": "BirmingHack Sign-in System (contact email css@guild.bham.ac.uk)",
+    "User-Agent": "BirmingHack Sign-in System",
 }
 
 # Load Printer Configuration
@@ -67,46 +72,32 @@ class AttendeeTracker:
         self.last_scan_time: float = 0
         self.scan_cooldown: int = 4
         
-        # Track pizza groups locally
         self.group: int = 1
         self.serial: int = 1
 
     def initialize_data(self) -> None:
-        """Fetches tickets, custom answers, and existing check-ins to sync state."""
-        print("Fetching tickets and custom questions from Tito...")
+        print("Fetching tickets from Tito...")
         
-        # 1. Fetch all tickets
+        # 1. Fetch all tickets via Check-in API (Needed for rapid scanning)
         try:
             tickets_response = requests.get(f"{EE_BASE_URL}/tickets", headers=HEADERS)
             tickets_response.raise_for_status()
             tickets_data = tickets_response.json()
 
-            tickets = (
-                tickets_data.get("tickets", tickets_data)
-                if isinstance(tickets_data, dict)
-                else tickets_data
-            )
+            tickets = tickets_data.get("tickets", tickets_data) if isinstance(tickets_data, dict) else tickets_data
 
             for t in tickets:
                 ref = t.get("reference")
                 slug = t.get("slug")
                 t_id = t.get("id")
-                first = t.get("first_name") or ""
-                last = t.get("last_name") or ""
-                name = f"{first} {last}".strip() or "Unknown Guest"
-                
+                name = f"{t.get('first_name') or ''} {t.get('last_name') or ''}".strip() or "Unknown Guest"
                 ticket_type = t.get("release_title") or t.get("release", {}).get("title", "Attendee")
 
                 if slug and ref and t_id:
-                    ticket = Ticket(
-                        slug=slug, 
-                        reference=ref, 
-                        t_id=t_id, 
-                        name=name,
-                        ticket_type=ticket_type
+                    self.tickets_by_slug[slug] = Ticket(
+                        slug=slug, reference=ref, t_id=t_id, name=name, ticket_type=ticket_type
                     )
-                    self.tickets_by_slug[slug] = ticket
-                    self.tickets_by_id[t_id] = ticket
+                    self.tickets_by_id[t_id] = self.tickets_by_slug[slug]
 
             print(f"Loaded {len(self.tickets_by_slug)} valid tickets.")
 
@@ -114,35 +105,45 @@ class AttendeeTracker:
             print(f"Failed to fetch tickets: {e}")
             sys.exit(1)
 
-        # 2. Fetch Answers (Pizza, Pronouns, Dietary) via Check-in API
-        try:
-            answers_response = requests.get(f"{EE_BASE_URL}/answers", headers=HEADERS)
-            answers_response.raise_for_status()
-            answers_data = answers_response.json()
-            
-            answers = (
-                answers_data.get("answers", answers_data)
-                if isinstance(answers_data, dict)
-                else answers_data
-            )
+        # 2. Fetch Answers via Authenticated Core API
+        if not all([TITO_ACCOUNT_SLUG, TITO_EVENT_SLUG, TITO_SECRET]):
+            print("WARNING: Missing Core API credentials in .env! Cannot fetch pizza/pronouns.")
+        else:
+            print("Using Tito Core API to fetch custom answers securely...")
+            core_headers = {
+                "Authorization": f"Token token={TITO_SECRET}",
+                "Accept": "application/json",
+            }
+            try:
+                q_response = requests.get(f"https://api.tito.io/v3/{TITO_ACCOUNT_SLUG}/{TITO_EVENT_SLUG}/questions", headers=core_headers)
+                q_response.raise_for_status()
+                questions = q_response.json().get("questions", [])
+                
+                target_questions = {
+                    'What are your preferred pronouns?': 'pronouns',
+                    'What is your pizza preference?': 'pizza_pref',
+                    'Do you have any dietary restrictions?': 'dietary_reqs'
+                }
 
-            for ans in answers:
-                t_id = ans.get("ticket_id")
-                if t_id and t_id in self.tickets_by_id:
-                    # Depending on the payload structure, title is sometimes under question -> title
-                    question_title = ans.get("question", {}).get("title", "")
-                    response = ans.get("response", "")
-                    
-                    if question_title == 'What are your preferred pronouns?':
-                        self.tickets_by_id[t_id].pronouns = response
-                    elif question_title == 'What is your pizza preference?':
-                        self.tickets_by_id[t_id].pizza_pref = response
-                    elif question_title == 'Do you have any dietary restrictions?':
-                        self.tickets_by_id[t_id].dietary_reqs = response
+                for q in questions:
+                    q_title = q.get("title", "")
+                    if q_title in target_questions:
+                        q_slug = q.get("slug")
+                        attr_name = target_questions[q_title]
                         
-            print("Successfully mapped custom question answers to tickets.")
-        except requests.RequestException as e:
-            print(f"Failed to fetch custom answers: {e} - Proceeding without answers.")
+                        ans_resp = requests.get(f"https://api.tito.io/v3/{TITO_ACCOUNT_SLUG}/{TITO_EVENT_SLUG}/questions/{q_slug}/answers?page[size]=1000", headers=core_headers)
+                        ans_resp.raise_for_status()
+                        
+                        for ans in ans_resp.json().get("answers", []):
+                            t_id = ans.get("ticket_id") or ans.get("ticket", {}).get("id")
+                            if t_id and t_id in self.tickets_by_id:
+                                setattr(self.tickets_by_id[t_id], attr_name, ans.get("response", ""))
+                
+                pizza_count = sum(1 for t in self.tickets_by_slug.values() if t.pizza_pref)
+                print(f"Successfully mapped answers for {pizza_count} attendees using Core API.")
+                
+            except requests.RequestException as e:
+                print(f"Failed to fetch answers via Core API: {e}")
 
         # 3. Fetch Registration Check-ins (Permanent Badging State)
         try:
@@ -176,7 +177,6 @@ class AttendeeTracker:
             sys.exit(1)
 
     def process_qr_code(self, qr_data: str) -> str:
-        """Handles registration, printing, and building capacity checking."""
         if qr_data not in self.tickets_by_slug:
             return f"INVALID TICKET: {qr_data}"
 
@@ -187,7 +187,6 @@ class AttendeeTracker:
         if not ticket.has_registered:
             print(f"First scan for {ticket.name}. Registering & Printing...")
             
-            # Post to Tito Registration List
             url = f"{REG_BASE_URL}/checkins"
             payload = {"checkin": {"ticket_reference": ticket.reference}}
             try:
@@ -195,7 +194,6 @@ class AttendeeTracker:
                 ticket.has_registered = True
                 status = "REGISTERED & "
 
-                # Trigger Printer Scripts
                 try:
                     printer.print_pass(
                         imggen.name(ticket.name), 
@@ -216,6 +214,8 @@ class AttendeeTracker:
                         if self.serial % 10 == 0:
                             self.group += 1
                             print(f"Incrementing pizza group to {self.group}")
+                    else:
+                        print(f"No pizza preference found for {ticket.name}! Skipping food token.")
                             
                 except Exception as e:
                     print(f"Printer error: {e}")
@@ -228,7 +228,6 @@ class AttendeeTracker:
 
         # --- 2. HANDLE ENTRY/EXIT (Every Time) ---
         if ticket.is_checked_in:
-            # Attendee is inside, CHECK OUT
             url = f"{EE_BASE_URL}/checkins/{ticket.checkin_uuid}"
             try:
                 requests.delete(url, headers=HEADERS).raise_for_status()
@@ -238,7 +237,6 @@ class AttendeeTracker:
                 print(f"API Error during Check-out: {e}")
                 return "API ERROR"
         else:
-            # Attendee is outside, CHECK IN
             url = f"{EE_BASE_URL}/checkins"
             payload = {"checkin": {"ticket_reference": ticket.reference}}
             try:
@@ -295,19 +293,16 @@ def main() -> None:
             message = tracker.process_qr_code(qr_data)
             tracker.last_scan_time = current_time
 
-            # Draw bounding box
             points = obj.polygon
             if len(points) == 4:
                 for i in range(4):
                     cv2.line(frame, points[i], points[(i + 1) % 4], (255, 0, 0), 3)
 
-            # Draw status text
             color = (0, 0, 255) if "OUT" in message or "ERROR" in message else (0, 255, 0)
             (text_w, text_h), _ = cv2.getTextSize(message, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
             cv2.rectangle(frame, (25, 25), (35 + text_w, 60), (0, 0, 0), -1)
             cv2.putText(frame, message, (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
-            # Snapshot and freeze
             frozen_frame = frame.copy()
             freeze_until = current_time + freeze_duration
             break 
