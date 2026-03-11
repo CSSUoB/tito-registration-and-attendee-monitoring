@@ -43,6 +43,7 @@ try:
         int(config['printer']['maj'], 16), 
         int(config['printer']['min'], 16)
     )
+    printer.test_print()
 except Exception as e:
     print(f"Warning: Could not initialize printer. Check config.yaml and USB. Error: {e}")
 

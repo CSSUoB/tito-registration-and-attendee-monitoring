@@ -8,6 +8,10 @@ def init_printer(maj: int, min: int):
     global p
     p = Usb(maj, min, 0, profile="TM-P80")
 
+def test_print():
+    p.image("assets/tex.png", center=True)
+    p.cut()
+
 def print_pass(name_image: Union[str, Image.Image], pronouns_image: Union[str, Image.Image], reference: str, ticket_type: str, slug: str):
     p.linedisplay_clear()
     p.image("assets/birminghack-logo-raster-bw-rs.png",center=True)
