@@ -43,7 +43,7 @@ try:
         int(config['printer']['maj'], 16), 
         int(config['printer']['min'], 16)
     )
-    printer.test_print()
+    # printer.test_print()
 except Exception as e:
     print(f"Warning: Could not initialize printer. Check config.yaml and USB. Error: {e}")
 
@@ -60,6 +60,7 @@ class Ticket:
     pronouns: str = ""
     pizza_pref: str = ""
     dietary_reqs: Optional[str] = None
+    student_id: Optional[str] = None
 
     @property
     def is_checked_in(self) -> bool:
@@ -70,6 +71,7 @@ class AttendeeTracker:
     def __init__(self) -> None:
         self.tickets_by_slug: dict[str, Ticket] = {}
         self.tickets_by_id: dict[int, Ticket] = {}
+        self.tickets_by_student_id: dict[str, Ticket] = {}
         self.last_scan_time: float = 0
         self.scan_cooldown: int = 4
         
@@ -123,7 +125,8 @@ class AttendeeTracker:
                 target_questions = {
                     'What are your preferred pronouns?': 'pronouns',
                     'What is your pizza preference?': 'pizza_pref',
-                    'Do you have any dietary restrictions?': 'dietary_reqs'
+                    'Do you have any dietary restrictions?': 'dietary_reqs',
+                    'What is your Student ID?': 'student_id'
                 }
 
                 for q in questions:
@@ -138,7 +141,12 @@ class AttendeeTracker:
                         for ans in ans_resp.json().get("answers", []):
                             t_id = ans.get("ticket_id") or ans.get("ticket", {}).get("id")
                             if t_id and t_id in self.tickets_by_id:
-                                setattr(self.tickets_by_id[t_id], attr_name, ans.get("response", ""))
+                                response_text = ans.get("response", "")
+                                setattr(self.tickets_by_id[t_id], attr_name, response_text)
+
+                                if attr_name == 'student_id' and response_text:
+                                    clean_id = str(response_text).strip()
+                                    self.tickets_by_student_id[clean_id] = self.tickets_by_id[t_id]
                 
                 pizza_count = sum(1 for t in self.tickets_by_slug.values() if t.pizza_pref)
                 print(f"Successfully mapped answers for {pizza_count} attendees using Core API.")
@@ -178,10 +186,14 @@ class AttendeeTracker:
             sys.exit(1)
 
     def process_qr_code(self, qr_data: str) -> str:
-        if qr_data not in self.tickets_by_slug:
+        if qr_data in self.tickets_by_slug:
+            ticket = self.tickets_by_slug[qr_data]
+        elif qr_data in self.tickets_by_student_id:
+            ticket = self.tickets_by_student_id[qr_data]
+        else:
+            print(self.tickets_by_student_id)
             return f"INVALID TICKET: {qr_data}"
 
-        ticket = self.tickets_by_slug[qr_data]
         status = ""
 
         # --- 1. HANDLE REGISTRATION (First Time Only) ---
