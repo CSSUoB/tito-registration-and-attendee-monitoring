@@ -20,6 +20,10 @@ def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: Optional[d
     p.set(align="left",bold=False,normal_textsize=True)
     for pizza_type, count in pizza_counts.items():
         p.software_columns([pizza_type, str(count)], widths=48, align=["left", "right"])
+    p.ln()
+    p.text("Total: " + str(sum(pizza_counts.values())))
+
+    p.ln()
     if dietary_counts:
         p.ln()
         p.text("Allergy Summary")

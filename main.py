@@ -286,7 +286,7 @@ class AttendeeTracker:
                 pizza_summary[ticket.pizza_pref] = pizza_summary.get(ticket.pizza_pref, 0) + 1
 
             # add dietary requirements summary
-            if ticket.is_checked_in and ticket.dietary_reqs:
+            if ticket.has_registered and ticket.dietary_reqs:
                 allergy_list[ticket.dietary_reqs] = allergy_list.get(ticket.dietary_reqs, 0) + 1
         printer.print_pizza_summary(pizza_summary, allergy_list)
 
