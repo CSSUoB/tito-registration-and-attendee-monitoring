@@ -72,6 +72,7 @@ class AttendeeTracker:
         self.tickets_by_slug: dict[str, Ticket] = {}
         self.tickets_by_id: dict[int, Ticket] = {}
         self.tickets_by_student_id: dict[str, Ticket] = {}
+        self.huk_agreed_tickets: list[Ticket] = []
         self.last_scan_time: float = 0
         self.scan_cooldown: int = 4
         
@@ -126,7 +127,9 @@ class AttendeeTracker:
                     'What are your preferred pronouns?': 'pronouns',
                     'What is your pizza preference?': 'pizza_pref',
                     'Do you have any dietary restrictions?': 'dietary_reqs',
-                    'What is your Student ID?': 'student_id'
+                    'What is your Student ID?': 'student_id',
+                    'Are you fasting?': 'fasting',
+                    'Hackathons UK Data Sharing Agreement': 'huk-approval'
                 }
 
                 for q in questions:
@@ -147,9 +150,13 @@ class AttendeeTracker:
                                 if attr_name == 'student_id' and response_text:
                                     clean_id = str(response_text).strip()
                                     self.tickets_by_student_id[clean_id] = self.tickets_by_id[t_id]
+
+                                if attr_name == 'huk-approval' and response_text == 'I agree':
+                                    self.huk_agreed_tickets.append(self.tickets_by_id[t_id])
                 
                 pizza_count = sum(1 for t in self.tickets_by_slug.values() if t.pizza_pref)
                 print(f"Successfully mapped answers for {pizza_count} attendees using Core API.")
+                print(f"HUK Agreement Count: {len(self.huk_agreed_tickets)}")
                 
             except requests.RequestException as e:
                 print(f"Failed to fetch answers via Core API: {e}")
@@ -195,6 +202,11 @@ class AttendeeTracker:
             return f"INVALID TICKET: {qr_data}"
 
         status = ""
+
+        if ticket not in self.huk_agreed_tickets:
+            print(f"Attendee {ticket.name} has not agreed to the HUK Data Sharing Agreement. Denying entry.")
+            self.initialize_data()
+            return "HUK AGREEMENT REQUIRED"
 
         # --- 1. HANDLE REGISTRATION (First Time Only) ---
         if not ticket.has_registered:
@@ -264,6 +276,20 @@ class AttendeeTracker:
         checked_in_count = sum(1 for t in self.tickets_by_slug.values() if t.is_checked_in)
         print(f"[{status}] {ticket.name} ({ticket.reference}) - Inside: {checked_in_count}")
         return f"{status}: {ticket.name}"
+    
+    def print_pizza_data(self) -> None:
+        pizza_summary: dict[str, int] = {}
+        allergy_list: dict[str, int] = {}
+        # only get tickets that are checked in
+        for ticket in self.tickets_by_slug.values():
+            if ticket.is_checked_in and ticket.pizza_pref:
+                pizza_summary[ticket.pizza_pref] = pizza_summary.get(ticket.pizza_pref, 0) + 1
+
+            # add dietary requirements summary
+            if ticket.is_checked_in and ticket.dietary_reqs:
+                allergy_list[ticket.dietary_reqs] = allergy_list.get(ticket.dietary_reqs, 0) + 1
+        printer.print_pizza_summary(pizza_summary, allergy_list)
+
 
 
 def main() -> None:
@@ -288,6 +314,11 @@ def main() -> None:
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
+
+        if cv2.waitKey(1) & 0xFF == ord("p"):
+            print("Generating pizza summary report...")
+            tracker.print_pizza_data()
+            continue
 
         current_time = time.time()
 

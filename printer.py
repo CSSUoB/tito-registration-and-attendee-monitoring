@@ -12,6 +12,23 @@ def test_print():
     p.image("assets/tex.png", center=True)
     p.cut()
 
+def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: Optional[dict[str, int]] = None):
+    p.linedisplay_clear()
+    p.set(align="center",bold=True,custom_size=True,width=3,height=3)
+    p.textln("Pizza Summary")
+    p.ln()
+    p.set(align="left",bold=False,normal_textsize=True)
+    for pizza_type, count in pizza_counts.items():
+        p.software_columns([pizza_type, str(count)], widths=48, align=["left", "right"])
+    if dietary_counts:
+        p.ln()
+        p.text("Allergy Summary")
+        p.ln()
+        p.set(align="left",bold=False,normal_textsize=True)
+        for dietary_req, count in dietary_counts.items():
+            p.software_columns([dietary_req, str(count)], widths=48, align=["left", "right"])
+    p.cut()
+
 def print_pass(name_image: Union[str, Image.Image], pronouns_image: Union[str, Image.Image], reference: str, ticket_type: str, slug: str):
     p.linedisplay_clear()
     p.image("assets/birminghack-logo-raster-bw-rs.png",center=True)
