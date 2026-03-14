@@ -59,6 +59,7 @@ class Ticket:
     ticket_type: str = ""
     pronouns: str = ""
     pizza_pref: str = ""
+    fasting: bool = False
     dietary_reqs: Optional[str] = None
     student_id: Optional[str] = None
 
@@ -145,7 +146,8 @@ class AttendeeTracker:
                             t_id = ans.get("ticket_id") or ans.get("ticket", {}).get("id")
                             if t_id and t_id in self.tickets_by_id:
                                 response_text = ans.get("response", "")
-                                setattr(self.tickets_by_id[t_id], attr_name, response_text)
+                                if attr_name in ['pronouns', 'pizza_pref', 'dietary_reqs']:
+                                    setattr(self.tickets_by_id[t_id], attr_name, response_text)
 
                                 if attr_name == 'student_id' and response_text:
                                     clean_id = str(response_text).strip()
@@ -153,10 +155,14 @@ class AttendeeTracker:
 
                                 if attr_name == 'huk-approval' and response_text == 'I agree':
                                     self.huk_agreed_tickets.append(self.tickets_by_id[t_id])
+
+                                if attr_name == 'fasting' and 'yes' in response_text.lower().strip():
+                                    self.tickets_by_id[t_id].fasting = True
                 
                 pizza_count = sum(1 for t in self.tickets_by_slug.values() if t.pizza_pref)
                 print(f"Successfully mapped answers for {pizza_count} attendees using Core API.")
                 print(f"HUK Agreement Count: {len(self.huk_agreed_tickets)}")
+                print(f"Fasting Count: {sum(1 for t in self.tickets_by_slug.values() if t.fasting)}")
                 
             except requests.RequestException as e:
                 print(f"Failed to fetch answers via Core API: {e}")
@@ -279,17 +285,29 @@ class AttendeeTracker:
     
     def print_pizza_data(self) -> None:
         pizza_summary: dict[str, int] = {}
+        fasting_pizza_summary: dict[str, int] = {}
         allergy_list: dict[str, int] = {}
         # only get tickets that are checked in
         for ticket in self.tickets_by_slug.values():
-            if ticket.is_checked_in and ticket.pizza_pref:
+            if ticket.has_registered and ticket.pizza_pref and not ticket.fasting:
                 pizza_summary[ticket.pizza_pref] = pizza_summary.get(ticket.pizza_pref, 0) + 1
 
             # add dietary requirements summary
             if ticket.has_registered and ticket.dietary_reqs:
                 allergy_list[ticket.dietary_reqs] = allergy_list.get(ticket.dietary_reqs, 0) + 1
-        printer.print_pizza_summary(pizza_summary, allergy_list)
 
+            # add fasting summary
+            if ticket.has_registered and ticket.pizza_pref and ticket.fasting:
+                fasting_pizza_summary[ticket.pizza_pref] = fasting_pizza_summary.get(ticket.pizza_pref, 0) + 1
+
+        printer.print_pizza_summary(pizza_summary, allergy_list, fasting_pizza_summary)
+
+    def print_dietary(self) -> None:
+        dietary_list: dict[str, int] = {}
+        for ticket in self.tickets_by_slug.values():
+            if ticket.has_registered and ticket.dietary_reqs:
+                dietary_list[ticket.dietary_reqs] = dietary_list.get(ticket.dietary_reqs, 0) + 1
+        printer.print_dietary_summary(dietary_list)
 
 
 def main() -> None:
@@ -318,6 +336,11 @@ def main() -> None:
         if cv2.waitKey(1) & 0xFF == ord("p"):
             print("Generating pizza summary report...")
             tracker.print_pizza_data()
+            continue
+
+        if cv2.waitKey(1) & 0xFF == ord("d"):
+            print("Generating dietary summary report...")
+            tracker.print_dietary()
             continue
 
         current_time = time.time()

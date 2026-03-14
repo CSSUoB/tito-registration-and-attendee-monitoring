@@ -12,7 +12,19 @@ def test_print():
     p.image("assets/tex.png", center=True)
     p.cut()
 
-def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: Optional[dict[str, int]] = None):
+def print_dietary_summary(dietary_counts: dict[str, int]):
+    p.linedisplay_clear()
+    p.set(align="center",bold=True,custom_size=True,width=3,height=3)
+    p.textln("Dietary Summary")
+    p.ln()
+    p.set(align="left",bold=False,normal_textsize=True)
+    for dietary_req, count in dietary_counts.items():
+        p.software_columns([dietary_req, str(count)], widths=48, align=["left", "right"])
+    p.ln()
+    p.text("Total: " + str(sum(dietary_counts.values())))
+    p.cut()
+
+def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: dict[str, int], fasting_counts: dict[str, int]):
     p.linedisplay_clear()
     p.set(align="center",bold=True,custom_size=True,width=3,height=3)
     p.textln("Pizza Summary")
@@ -24,13 +36,24 @@ def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: Optional[d
     p.text("Total: " + str(sum(pizza_counts.values())))
 
     p.ln()
-    if dietary_counts:
-        p.ln()
-        p.text("Allergy Summary")
-        p.ln()
-        p.set(align="left",bold=False,normal_textsize=True)
-        for dietary_req, count in dietary_counts.items():
-            p.software_columns([dietary_req, str(count)], widths=48, align=["left", "right"])
+    p.ln()
+    p.set(align="center",bold=True,custom_size=True,width=2,height=2)
+    p.text("Fasting Pizza Summary")
+    p.ln()
+    p.set(align="left",bold=False,normal_textsize=True)
+    for pizza_type, count in fasting_counts.items():
+        p.software_columns([pizza_type, str(count)], widths=48, align=["left", "right"])
+
+    p.text("Total: " + str(sum(fasting_counts.values())))
+
+    p.ln()
+    p.ln()
+    p.set(align="center",bold=True,custom_size=True,width=2,height=2)
+    p.text("Allergy Summary")
+    p.ln()
+    p.set(align="left",bold=False,normal_textsize=True)
+    for dietary_req, count in dietary_counts.items():
+        p.software_columns([dietary_req, str(count)], widths=48, align=["left", "right"])
     p.cut()
 
 def print_pass(name_image: Union[str, Image.Image], pronouns_image: Union[str, Image.Image], reference: str, ticket_type: str, slug: str):
