@@ -9,11 +9,9 @@ def init_printer(maj: int, min: int):
     global p
     p = Usb(maj, min, 0, profile="TM-P80")
 
-
 def test_print():
     p.image("assets/tex.png", center=True)
     p.cut()
-
 
 def print_dietary_summary(dietary_counts: list[tuple[str, str, str]]):
     p.linedisplay_clear()
@@ -24,14 +22,23 @@ def print_dietary_summary(dietary_counts: list[tuple[str, str, str]]):
         p.set(align="left",bold=False,normal_textsize=True)
         p.software_columns([name, dietary, pizza], widths=48, align=["left", "left", "right"])
     p.cut()
-    
 
-def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: dict[str, int], fasting_counts: dict[str, int]):
+def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: dict[str, int], fasting_counts: dict[str, int], total_counts: dict[str, int]):
     # for pizza sections, columns to show pizza type, count of attendees and number of pizzas
     p.linedisplay_clear()
     p.set(align="center",bold=True,custom_size=True,width=3,height=3)
-    p.textln("Pizza Summary")
+    p.textln("Summary (Totals)")
     p.ln()
+    p.set(align="left",bold=False,normal_textsize=True)
+    p.software_columns(["Pizza Type", "Attendees", "Pizzas", "Slices"], widths=48, align=["left", "right", "right", "right"])
+    for pizza_type, count in total_counts.items():
+        p.software_columns([pizza_type, str(count), str(math.ceil((count * 4) // 12)), str(count * 4)], widths=48, align=["left", "right", "right", "right"])
+    p.ln()
+    p.text("Total: " + str(sum(total_counts.values())))
+    p.ln()
+
+    p.set(align="center", bold=True, custom_size=True, width=2, height=2)
+    p.textln("Summary (Non-Fasting)")
     p.set(align="left",bold=False,normal_textsize=True)
     p.software_columns(["Pizza Type", "Attendees", "Pizzas", "Slices"], widths=48, align=["left", "right", "right", "right"])
     for pizza_type, count in pizza_counts.items():
@@ -42,7 +49,7 @@ def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: dict[str, 
     p.ln()
     p.ln()
     p.set(align="center",bold=True,custom_size=True,width=2,height=2)
-    p.text("Fasting Pizza Summary")
+    p.text("Fasting Summary")
     p.ln()
     p.set(align="left",bold=False,normal_textsize=True)
     p.software_columns(["Pizza Type", "Attendees", "Pizzas", "Slices"], widths=48, align=["left", "right", "right", "right"])
@@ -106,4 +113,13 @@ def print_food(issued_to: str, pizza_type: str, group: str, d_req: Optional[str]
         p.ln()
         p.set(align="left",bold=False,normal_textsize=True,invert=False)
         p.textln(d_req)
+    p.cut()
+
+def print_security_badge() -> None:
+    p.linedisplay_clear()
+    p.image("assets/birminghack-logo-raster-bw-rs.png",center=True)
+    p.ln()
+    p.set(align="center", bold=True, custom_size=True, width=3, height=3)
+    p.textln("Security")
+    p.ln()
     p.cut()

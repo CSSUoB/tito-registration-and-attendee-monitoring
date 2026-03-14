@@ -287,6 +287,7 @@ class AttendeeTracker:
         pizza_summary: dict[str, int] = {}
         fasting_pizza_summary: dict[str, int] = {}
         allergy_list: dict[str, int] = {}
+        total_counts: dict[str, int] = {}
         # only get tickets that are checked in
         for ticket in self.tickets_by_slug.values():
             if ticket.has_registered and ticket.pizza_pref and not ticket.fasting:
@@ -300,7 +301,12 @@ class AttendeeTracker:
             if ticket.has_registered and ticket.pizza_pref and ticket.fasting:
                 fasting_pizza_summary[ticket.pizza_pref] = fasting_pizza_summary.get(ticket.pizza_pref, 0) + 1
 
-        printer.print_pizza_summary(pizza_summary, allergy_list, fasting_pizza_summary)
+
+        # add totals
+        for pizza_type in set(pizza_summary.keys()).union(fasting_pizza_summary.keys()):
+            total_counts[pizza_type] = pizza_summary.get(pizza_type, 0) + fasting_pizza_summary.get(pizza_type, 0)
+
+        printer.print_pizza_summary(pizza_summary, allergy_list, fasting_pizza_summary, total_counts)
 
     def print_dietary(self) -> None:
         # print the attendee name, their dietary requirement and pizza preference, we do not need a count
@@ -343,6 +349,11 @@ def main() -> None:
         if cv2.waitKey(1) & 0xFF == ord("d"):
             print("Generating dietary summary report...")
             tracker.print_dietary()
+            continue
+
+        if cv2.waitKey(1) & 0xFF == ord("s"):
+            print("Printing security badge...")
+            printer.print_security_badge()
             continue
 
         current_time = time.time()
