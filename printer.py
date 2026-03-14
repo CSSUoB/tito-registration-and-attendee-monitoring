@@ -1,6 +1,7 @@
 from PIL import Image
 from escpos.printer import Usb, Dummy  # type: ignore
 from typing import Optional, Union
+import math
 
 p = Dummy()
 
@@ -25,13 +26,15 @@ def print_dietary_summary(dietary_counts: dict[str, int]):
     p.cut()
 
 def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: dict[str, int], fasting_counts: dict[str, int]):
+    # for pizza sections, columns to show pizza type, count of attendees and number of pizzas
     p.linedisplay_clear()
     p.set(align="center",bold=True,custom_size=True,width=3,height=3)
     p.textln("Pizza Summary")
     p.ln()
     p.set(align="left",bold=False,normal_textsize=True)
+    p.software_columns(["Pizza Type", "Attendees", "Pizzas", "Slices"], widths=48, align=["left", "right", "right", "right"])
     for pizza_type, count in pizza_counts.items():
-        p.software_columns([pizza_type, str(count)], widths=48, align=["left", "right"])
+        p.software_columns([pizza_type, str(count), str(math.ceil((count * 4) // 12)), str(count * 4)], widths=48, align=["left", "right", "right", "right"])
     p.ln()
     p.text("Total: " + str(sum(pizza_counts.values())))
 
@@ -41,8 +44,9 @@ def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: dict[str, 
     p.text("Fasting Pizza Summary")
     p.ln()
     p.set(align="left",bold=False,normal_textsize=True)
+    p.software_columns(["Pizza Type", "Attendees", "Pizzas", "Slices"], widths=48, align=["left", "right", "right", "right"])
     for pizza_type, count in fasting_counts.items():
-        p.software_columns([pizza_type, str(count)], widths=48, align=["left", "right"])
+        p.software_columns([pizza_type, str(count), str(math.ceil((count * 4) // 12)), str(count * 4)], widths=48, align=["left", "right", "right", "right"])
 
     p.text("Total: " + str(sum(fasting_counts.values())))
 
