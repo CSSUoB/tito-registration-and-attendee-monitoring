@@ -303,10 +303,12 @@ class AttendeeTracker:
         printer.print_pizza_summary(pizza_summary, allergy_list, fasting_pizza_summary)
 
     def print_dietary(self) -> None:
-        dietary_list: dict[str, int] = {}
+        # print the attendee name, their dietary requirement and pizza preference, we do not need a count
+        dietary_list: list[tuple[str, str, str]] = []
         for ticket in self.tickets_by_slug.values():
-            if ticket.has_registered and ticket.dietary_reqs:
-                dietary_list[ticket.dietary_reqs] = dietary_list.get(ticket.dietary_reqs, 0) + 1
+            if ticket.has_registered and ticket.dietary_reqs and ticket.pizza_pref:
+                dietary_list.append((ticket.name, ticket.dietary_reqs, ticket.pizza_pref))
+
         printer.print_dietary_summary(dietary_list)
 
 

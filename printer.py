@@ -9,21 +9,22 @@ def init_printer(maj: int, min: int):
     global p
     p = Usb(maj, min, 0, profile="TM-P80")
 
+
 def test_print():
     p.image("assets/tex.png", center=True)
     p.cut()
 
-def print_dietary_summary(dietary_counts: dict[str, int]):
+
+def print_dietary_summary(dietary_counts: list[tuple[str, str, str]]):
     p.linedisplay_clear()
     p.set(align="center",bold=True,custom_size=True,width=3,height=3)
     p.textln("Dietary Summary")
-    p.ln()
-    p.set(align="left",bold=False,normal_textsize=True)
-    for dietary_req, count in dietary_counts.items():
-        p.software_columns([dietary_req, str(count)], widths=48, align=["left", "right"])
-    p.ln()
-    p.text("Total: " + str(sum(dietary_counts.values())))
+
+    for name, dietary, pizza in dietary_counts:
+        p.set(align="left",bold=False,normal_textsize=True)
+        p.software_columns([name, dietary, pizza], widths=48, align=["left", "left", "right"])
     p.cut()
+    
 
 def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: dict[str, int], fasting_counts: dict[str, int]):
     # for pizza sections, columns to show pizza type, count of attendees and number of pizzas
