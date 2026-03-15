@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Optional
 from strictyaml import load  # type: ignore
 import numpy as np
+from playsound3 import playsound
 
 import printer
 import imggen
@@ -208,12 +209,14 @@ class AttendeeTracker:
             ticket = self.tickets_by_student_id[qr_data]
         else:
             print(self.tickets_by_student_id)
+            playsound("assets/fail.mp3")
             return f"INVALID TICKET: {qr_data}"
 
         status = ""
 
         if ticket not in self.huk_agreed_tickets:
             print(f"Attendee {ticket.name} has not agreed to the HUK Data Sharing Agreement. Denying entry.")
+            playsound("assets/fail.mp3")
             self.initialize_data()
             return "HUK AGREEMENT REQUIRED"
         
@@ -237,6 +240,7 @@ class AttendeeTracker:
                 print(f"Reprinted pass for {ticket.name}.")
             except Exception as e:
                 print(f"Printer error during reprint: {e}")
+                playsound("assets/fail.mp3")
                 return "REPRINT ERROR"
 
         # --- 1. HANDLE REGISTRATION (First Time Only) ---
@@ -275,11 +279,13 @@ class AttendeeTracker:
                             
                 except Exception as e:
                     print(f"Printer error: {e}")
+                    playsound("assets/fail.mp3")
                     status += "(PRINTER ERROR) "
 
             except requests.RequestException as e:
                 error_details = e.response.text if e.response is not None else "No response"
                 print(f"API Error during Registration: {e}\nTito says: {error_details}")
+                playsound("assets/fail.mp3")
                 return "REGISTRATION ERROR"
 
         # --- 2. HANDLE ENTRY/EXIT (Every Time) ---
@@ -291,6 +297,7 @@ class AttendeeTracker:
                 status += "CHECKED OUT"
             except requests.RequestException as e:
                 print(f"API Error during Check-out: {e}")
+                playsound("assets/fail.mp3")
                 return "API ERROR"
         else:
             url = f"{EE_BASE_URL}/checkins"
@@ -302,10 +309,12 @@ class AttendeeTracker:
                 status += "CHECKED IN"
             except requests.RequestException as e:
                 print(f"API Error during Check-in: {e}")
+                playsound("assets/fail.mp3")
                 return "API ERROR"
 
         checked_in_count = sum(1 for t in self.tickets_by_slug.values() if t.is_checked_in)
         print(f"[{status}] {ticket.name} ({ticket.reference}) - Inside: {checked_in_count}")
+        playsound("assets/success.mp3")
         return f"{status}: {ticket.name}"
     
     def print_pizza_data(self) -> None:
