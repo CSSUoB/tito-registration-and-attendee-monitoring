@@ -9,8 +9,6 @@ from dataclasses import dataclass
 from typing import Optional
 from strictyaml import load  # type: ignore
 import numpy as np
-from playsound3 import playsound
-
 import printer
 import imggen
 
