@@ -161,3 +161,25 @@ def print_security_badge() -> None:
     p.ln()
     p.cut()
     last_print_time = datetime.datetime.now()
+
+def print_checked_in_summary(summary: dict[str, dict[str, int]]) -> None:
+    global last_print_time
+    if not can_print():
+        print("Print canceled: Too soon since last print.")
+        return
+    p.linedisplay_clear()
+    p.image("assets/birminghack-logo-raster-bw-rs.png",center=True)
+    p.ln()
+    p.set(align="center", bold=True, custom_size=True, width=3, height=3)
+    p.textln("Checked In")
+    p.ln()
+    p.set(align="left", bold=False, normal_textsize=True)
+    for category, counts in summary.items():
+        p.set(align="center", bold=True, custom_size=True, width=2, height=2)
+        p.textln(category)
+        p.set(align="left", bold=False, normal_textsize=True)
+        for item, count in counts.items():
+            p.software_columns([item, str(count)], widths=48, align=["left", "right"])
+        p.ln()
+    p.cut()
+    last_print_time = datetime.datetime.now()
