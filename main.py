@@ -80,6 +80,8 @@ class AttendeeTracker:
         self.group: int = 1
         self.serial: int = 1
 
+        self.reprint: bool = False
+
     def initialize_data(self) -> None:
         print("Fetching tickets from Tito...")
         
@@ -213,6 +215,28 @@ class AttendeeTracker:
             print(f"Attendee {ticket.name} has not agreed to the HUK Data Sharing Agreement. Denying entry.")
             self.initialize_data()
             return "HUK AGREEMENT REQUIRED"
+        
+        if self.reprint:
+            self.reprint = False
+            try:
+                printer.print_pass(
+                    imggen.name(ticket.name), 
+                    imggen.pronouns(ticket.pronouns), 
+                    ticket.reference, 
+                    ticket.ticket_type, 
+                    ticket.slug
+                )
+                if ticket.pizza_pref:
+                    printer.print_food(
+                        ticket.name, 
+                        ticket.pizza_pref, 
+                        str(self.group), 
+                        ticket.dietary_reqs
+                    )
+                print(f"Reprinted pass for {ticket.name}.")
+            except Exception as e:
+                print(f"Printer error during reprint: {e}")
+                return "REPRINT ERROR"
 
         # --- 1. HANDLE REGISTRATION (First Time Only) ---
         if not ticket.has_registered:
@@ -354,6 +378,11 @@ def main() -> None:
         if cv2.waitKey(1) & 0xFF == ord("s"):
             print("Printing security badge...")
             printer.print_security_badge()
+            continue
+
+        if cv2.waitKey(1) & 0xFF == ord("r"):
+            print("Enabling reprint mode for next scan...")
+            tracker.reprint = True
             continue
 
         current_time = time.time()
