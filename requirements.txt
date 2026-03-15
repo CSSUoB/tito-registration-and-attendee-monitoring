@@ -2,7 +2,7 @@
 opencv-python
 requests
 python-dotenv
-pyzbar
+zxing-cpp
 
 # --- Config & Image Generation ---
 strictyaml

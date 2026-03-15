@@ -4,10 +4,11 @@ import time
 import cv2  # type: ignore
 import requests
 from dotenv import load_dotenv
-from pyzbar.pyzbar import decode  # type: ignore
+import zxingcpp  # type: ignore
 from dataclasses import dataclass
 from typing import Optional
 from strictyaml import load  # type: ignore
+import numpy as np
 
 import printer
 import imggen
@@ -391,10 +392,10 @@ def main() -> None:
             cv2.imshow("Tito Live Check-in Scanner", frozen_frame)
             continue
 
-        decoded_objects = decode(frame)
+        decoded_objects = zxingcpp.read_barcodes(frame)
 
         for obj in decoded_objects:
-            qr_data = obj.data.decode("utf-8")
+            qr_data = obj.text
 
             if current_time - tracker.last_scan_time < tracker.scan_cooldown:
                 continue
@@ -402,10 +403,15 @@ def main() -> None:
             message = tracker.process_qr_code(qr_data)
             tracker.last_scan_time = current_time
 
-            points = obj.polygon
-            if len(points) == 4:
-                for i in range(4):
-                    cv2.line(frame, points[i], points[(i + 1) % 4], (255, 0, 0), 3)
+            p = obj.position
+            pts = np.array([
+                [p.top_left.x, p.top_left.y],
+                [p.top_right.x, p.top_right.y],
+                [p.bottom_right.x, p.bottom_right.y],
+                [p.bottom_left.x, p.bottom_left.y]
+            ], np.int32)
+            pts = pts.reshape((-1, 1, 2))
+            cv2.polylines(frame, [pts], True, (255, 0, 0), 3)
 
             color = (0, 0, 255) if "OUT" in message or "ERROR" in message else (0, 255, 0)
             (text_w, text_h), _ = cv2.getTextSize(message, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
