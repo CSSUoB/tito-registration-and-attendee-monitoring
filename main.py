@@ -307,7 +307,6 @@ class AttendeeTracker:
 
         checked_in_count = sum(1 for t in self.tickets_by_slug.values() if t.is_checked_in)
         print(f"[{status}] {ticket.name} ({ticket.reference}) - Inside: {checked_in_count}")
-        playsound("assets/success.mp3")
         return f"{status}: {ticket.name}"
     
     def print_pizza_data(self) -> None:

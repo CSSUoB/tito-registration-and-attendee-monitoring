@@ -23,6 +23,8 @@ def test_print():
         print("Print canceled: Too soon since last print.")
         return
     p.image("assets/tex.png", center=True)
+    p.set(bold=False, normal_textsize=True)
+    p.textln("Printed: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     p.cut()
     last_print_time = datetime.datetime.now()
 
@@ -38,6 +40,9 @@ def print_dietary_summary(dietary_counts: list[tuple[str, str, str]]):
     for name, dietary, pizza in dietary_counts:
         p.set(align="left",bold=False,normal_textsize=True)
         p.software_columns([name, dietary, pizza], widths=48, align=["left", "left", "right"])
+
+    p.set(bold=False, normal_textsize=True)
+    p.textln("Printed: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     p.cut()
     last_print_time = datetime.datetime.now()
 
@@ -88,6 +93,9 @@ def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: dict[str, 
     p.set(align="left",bold=False,normal_textsize=True)
     for dietary_req, count in dietary_counts.items():
         p.software_columns([dietary_req, str(count)], widths=48, align=["left", "right"])
+
+    p.set(bold=False, normal_textsize=True)
+    p.textln("Printed: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     p.cut()
     last_print_time = datetime.datetime.now()
 
@@ -117,6 +125,8 @@ def print_pass(name_image: Union[str, Image.Image], pronouns_image: Union[str, I
     p.set(align="left",bold=False,normal_textsize=True)
     p.ln()
     p.textln("Please wear your attendee pass at all times.")
+    p.set(bold=False, normal_textsize=True)
+    p.textln("Printed: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     p.cut()
     last_print_time = datetime.datetime.now()
 
@@ -145,6 +155,9 @@ def print_food(issued_to: str, pizza_type: str, group: str, d_req: Optional[str]
         p.ln()
         p.set(align="left",bold=False,normal_textsize=True,invert=False)
         p.textln(d_req)
+
+    p.set(bold=False, normal_textsize=True)
+    p.textln("Printed: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     p.cut()
     last_print_time = datetime.datetime.now()
 
@@ -159,6 +172,8 @@ def print_security_badge() -> None:
     p.set(align="center", bold=True, custom_size=True, width=3, height=3)
     p.textln("Security")
     p.ln()
+    p.set(bold=False, normal_textsize=True)
+    p.textln("Printed: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     p.cut()
     last_print_time = datetime.datetime.now()
 
@@ -167,6 +182,7 @@ def print_checked_in_summary(summary: dict[str, dict[str, int]]) -> None:
     if not can_print():
         print("Print canceled: Too soon since last print.")
         return
+    total_checked_in: int = 0
     p.linedisplay_clear()
     p.image("assets/birminghack-logo-raster-bw-rs.png",center=True)
     p.ln()
@@ -180,6 +196,15 @@ def print_checked_in_summary(summary: dict[str, dict[str, int]]) -> None:
         p.set(align="left", bold=False, normal_textsize=True)
         for item, count in counts.items():
             p.software_columns([item, str(count)], widths=48, align=["left", "right"])
+            if "checked_in" in item:
+                total_checked_in += count
         p.ln()
+    p.ln()
+
+    p.set(align="center", bold=True, custom_size=True, width=2, height=2)
+    p.textln(f"Total Checked In: {total_checked_in}")
+    p.set(bold=False, normal_textsize=True)
+    p.ln()
+    p.textln("Printed: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     p.cut()
     last_print_time = datetime.datetime.now()
