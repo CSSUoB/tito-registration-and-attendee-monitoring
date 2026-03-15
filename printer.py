@@ -2,18 +2,35 @@ from PIL import Image
 from escpos.printer import Usb, Dummy  # type: ignore
 from typing import Optional, Union
 import math
+import datetime
+
+last_print_time: datetime.datetime = datetime.datetime.now() - datetime.timedelta(seconds=10)
+print_delay_seconds: int = 3
 
 p = Dummy()
+
+def can_print() -> bool:
+    global last_print_time
+    return (datetime.datetime.now() - last_print_time).total_seconds() >= print_delay_seconds
 
 def init_printer(maj: int, min: int):
     global p
     p = Usb(maj, min, 0, profile="TM-P80")
 
 def test_print():
+    global last_print_time
+    if not can_print():
+        print("Print canceled: Too soon since last print.")
+        return
     p.image("assets/tex.png", center=True)
     p.cut()
+    last_print_time = datetime.datetime.now()
 
 def print_dietary_summary(dietary_counts: list[tuple[str, str, str]]):
+    global last_print_time
+    if not can_print():
+        print("Print canceled: Too soon since last print.")
+        return
     p.linedisplay_clear()
     p.set(align="center",bold=True,custom_size=True,width=3,height=3)
     p.textln("Dietary Summary")
@@ -22,9 +39,14 @@ def print_dietary_summary(dietary_counts: list[tuple[str, str, str]]):
         p.set(align="left",bold=False,normal_textsize=True)
         p.software_columns([name, dietary, pizza], widths=48, align=["left", "left", "right"])
     p.cut()
+    last_print_time = datetime.datetime.now()
 
 def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: dict[str, int], fasting_counts: dict[str, int], total_counts: dict[str, int]):
     # for pizza sections, columns to show pizza type, count of attendees and number of pizzas
+    global last_print_time
+    if not can_print():
+        print("Print canceled: Too soon since last print.")
+        return
     p.linedisplay_clear()
     p.set(align="center",bold=True,custom_size=True,width=3,height=3)
     p.textln("Summary (Totals)")
@@ -67,8 +89,13 @@ def print_pizza_summary(pizza_counts: dict[str, int], dietary_counts: dict[str, 
     for dietary_req, count in dietary_counts.items():
         p.software_columns([dietary_req, str(count)], widths=48, align=["left", "right"])
     p.cut()
+    last_print_time = datetime.datetime.now()
 
 def print_pass(name_image: Union[str, Image.Image], pronouns_image: Union[str, Image.Image], reference: str, ticket_type: str, slug: str):
+    global last_print_time
+    if not can_print():
+        print("Print canceled: Too soon since last print.")
+        return
     p.linedisplay_clear()
     p.image("assets/birminghack-logo-raster-bw-rs.png",center=True)
     p.ln()
@@ -91,8 +118,13 @@ def print_pass(name_image: Union[str, Image.Image], pronouns_image: Union[str, I
     p.ln()
     p.textln("Please wear your attendee pass at all times.")
     p.cut()
+    last_print_time = datetime.datetime.now()
 
 def print_food(issued_to: str, pizza_type: str, group: str, d_req: Optional[str] = None):
+    global last_print_time
+    if not can_print():
+        print("Print canceled: Too soon since last print.")
+        return
     p.linedisplay_clear()
     p.ln()
     p.set(align="center",bold=True,custom_size=True,width=3,height=3,smooth=True)
@@ -114,8 +146,13 @@ def print_food(issued_to: str, pizza_type: str, group: str, d_req: Optional[str]
         p.set(align="left",bold=False,normal_textsize=True,invert=False)
         p.textln(d_req)
     p.cut()
+    last_print_time = datetime.datetime.now()
 
 def print_security_badge() -> None:
+    global last_print_time
+    if not can_print():
+        print("Print canceled: Too soon since last print.")
+        return
     p.linedisplay_clear()
     p.image("assets/birminghack-logo-raster-bw-rs.png",center=True)
     p.ln()
@@ -123,3 +160,4 @@ def print_security_badge() -> None:
     p.textln("Security")
     p.ln()
     p.cut()
+    last_print_time = datetime.datetime.now()
