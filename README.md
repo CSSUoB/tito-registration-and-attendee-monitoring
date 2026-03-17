@@ -20,6 +20,8 @@ The application tracks two attendee states using two separate Tito check-in list
 
 ### 1. Install Dependencies
 
+The application requires `git` to install version-controlled dependencies from GitHub. Ensure `git` (and standard build essentials, if required by your operating system) is installed on your machine before proceeding.
+
 Install the required Python packages using a virtual environment:
 
     pip install -r requirements.txt
@@ -40,7 +42,11 @@ Create a `config.yaml` file in the root directory. Add your printer's USB Vendor
 
 ### 3. Tito API Configuration
 
-Create a `.env` file in the root directory. The application requires API credentials to download attendee answers and update check-in lists.
+Create a `.env` file in the root directory. 
+
+Core API credentials are strictly mandatory. If they are missing, the application cannot verify the Hackathons UK Data Sharing Agreement, and all check-ins will be rejected.
+
+Important: Do not copy the placeholders literally. You must replace the `202X` and `your-...` values with your actual event year, slugs, and secrets.
 
     # Check-in API Configuration
     TITO_REGISTRATION_LIST_SLUG="birminghack-202X-registration"
