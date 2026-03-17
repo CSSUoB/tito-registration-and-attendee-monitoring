@@ -9,7 +9,7 @@ The application uses a webcam to scan QR codes and Data Matrix codes. It interfa
 The application tracks two attendee states using two separate Tito check-in lists:
 
 1. Registration State (Printed): The first time an attendee is scanned, the application prints a name badge. If the attendee provided a pizza preference, a pizza token is also printed. The attendee is then checked into the Registration list on Tito. On startup, the application downloads this list to know who has already received a badge. The application requires internet connectivity to Tito on startup to restore this state.
-2. Capacity State (Entry/Exit): Subsequent scans toggle the attendee's status on the Entry/Exit list in Tito. This tracks how many people are currently inside the venue.
+2. Capacity State (Entry/Exit): Every scan, including the initial registration scan, toggles the attendee's status on the Entry/Exit list in Tito. This tracks how many people are currently inside the venue.
 
 ## Hardware Requirements
 
@@ -42,7 +42,7 @@ Create a `config.yaml` file in the root directory. Add your printer's USB Vendor
 
 ### 3. Tito API Configuration
 
-Create a `.env` file in the root directory. 
+Copy the `example.env` file to a new file named `.env` in the root directory and populate it with your event credentials.
 
 Core API credentials are strictly mandatory. If they are missing, the application cannot verify the Hackathons UK Data Sharing Agreement, and all check-ins will be rejected.
 
