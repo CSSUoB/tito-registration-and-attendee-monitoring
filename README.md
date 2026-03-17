@@ -8,7 +8,7 @@ The application uses a webcam to scan QR codes and Data Matrix codes. It interfa
 
 The application tracks two attendee states using two separate Tito check-in lists:
 
-1. Registration State (Printed): The first time an attendee is scanned, the application prints a name badge and a pizza token. The attendee is then checked into the Registration list on Tito. On startup, the application downloads this list to know who has already received a badge. The application requires internet connectivity to Tito on startup to restore this state.
+1. Registration State (Printed): The first time an attendee is scanned, the application prints a name badge. If the attendee provided a pizza preference, a pizza token is also printed. The attendee is then checked into the Registration list on Tito. On startup, the application downloads this list to know who has already received a badge. The application requires internet connectivity to Tito on startup to restore this state.
 2. Capacity State (Entry/Exit): Subsequent scans toggle the attendee's status on the Entry/Exit list in Tito. This tracks how many people are currently inside the venue.
 
 ## Hardware Requirements
@@ -93,9 +93,9 @@ While the camera window is active, use the following keys to operate the applica
 * `d`: Print the dietary requirement summary report.
 * `c`: Print the checked-in capacity summary report.
 * `s`: Print a generic security badge.
-* `r`: Enable reprint mode. The next scanned ticket will reprint the badge and food token without altering check-in states.
+* `r`: Enable reprint mode. The next scanned ticket will reprint the badge and food token (if applicable). Note: The scan will still process normally after printing, meaning it will also toggle their entry/exit or registration state.
 
-Printer Rate Limiting: The printer is configured with a 3-second delay between print jobs to prevent queue failures. 
+Printer Rate Limiting: The printer enforces a strict 3-second minimum interval between print requests. If a scan or command attempts to print before 3 seconds have passed, the new print job is immediately canceled and ignored (it is not queued). 
 
 ## Asset Management
 
